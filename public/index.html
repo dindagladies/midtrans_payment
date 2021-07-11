@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Midtrans</title>
+
+    <style>
+        .mb-1 {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Modul Payment Midtrans</h1>
+
+
+    <p>Restapi untuk membuat billing </p>
+    <div class="mb-1">
+        <div class="mb-1">
+            <label>Jenis Pembayaran</label>
+            <select id="edtMethodPayment">
+                <!-- list data method payment -->
+            </select>
+        </div>
+
+        <div class="mb-1">
+            <label>Jumlah Pembayaran</label>
+            <input type="number" id="edtAmountPayment"> <br>
+        </div>
+
+        <button onclick="createBilling();">Create</button>
+    </div>
+    <br>
+    Nomor Billing : <input id="edtbilling" type="text" />
+    <hr>
+
+    <p>Restapi untuk cek status billing </p>
+    <button class="mb-1" onclick="cekStatusBilling();">Cek</button>
+    <button class="mb-1" onclick="cancelBilling();">Cancel Billing</button>
+    <br>
+    <div class="mb-1">Status Billing : <input id="lblstatusbilling" type="text" disabled /> <br></div>
+    <div class="mb-1">Metode Pembayran : <input id="lblmethodpayment" type="text" disabled /> <br></div>
+    <div class="mb-1">Jenis Pembayaran : <input id="lblkindpayment" type="text" disabled /> <br></div>
+    <div class="mb-1">Va Number : <input id="lblvanumber" type="text" disabled /> <br></div>
+    <hr>
+
+    <script>
+        function getMethodPayment() {
+            const surl = '/api/method_payment'
+            const param = {}
+            requestHttp(
+                surl, param,
+                function (response) {
+                    console.log(response);
+                    if (response.status == 'true') {
+                        let opt = '';
+                        for (const i in response.data) {
+                            opt = opt + `<option value="${response.data[i].CodePayment}">${response.data[i].NamePayment}</option>`
+                        }
+                        document.getElementById('edtMethodPayment').innerHTML = opt;
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                function (response) {
+                    console.log(response);
+                }
+            )
+        }
+        getMethodPayment()
+
+        function createBilling() {
+            const surl = '/api/create_billing'
+            const kindpayemnt = document.getElementById('edtMethodPayment').value;
+            const grandtotal = document.getElementById('edtAmountPayment').value;
+            if (grandtotal == '') {
+                alert('Jumlah pembayaran wajib diisi');
+            } else {
+                const param = {
+                    kindpayemnt: kindpayemnt,
+                    grandtotal: grandtotal
+                }
+                requestHttp(
+                    surl, param,
+                    function (response) {
+                        console.log(response);
+                        if (response.status == 'true') {
+                            document.getElementById('edtbilling').value = response.orderId;
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    function (response) {
+                        console.log(response);
+                    }
+                )
+            }
+        }
+
+        function cekStatusBilling() {
+            const docnumber = document.getElementById('edtbilling').value;
+            if (docnumber == '') {
+                alert('Nomor billing tidak boleh kosong');
+            } else {
+                const surl = '/api/status_billing'
+                const param = {
+                    docnumber: docnumber
+                }
+                requestHttp(
+                    surl, param,
+                    function (response) {
+                        console.log(response);
+                        if (response.status == 'true') {
+                            document.getElementById('lblstatusbilling').value = response.transactionStatus;
+                            document.getElementById('lblmethodpayment').value = response.paymentInfo.payment_type;
+                            document.getElementById('lblkindpayment').value = response.paymentInfo.bank;
+                            document.getElementById('lblvanumber').value = response.paymentInfo.va_number;
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    function (response) {
+                        console.log(response);
+                    }
+                )
+            }
+        }
+
+        function cancelBilling() {
+            const docnumber = document.getElementById('edtbilling').value;
+            if (docnumber == '') {
+                alert('Nomor billing tidak boleh kosong');
+            } else {
+                const surl = '/api/cancel_billing'
+                const param = {
+                    docnumber: docnumber
+                }
+                requestHttp(
+                    surl, param,
+                    function (response) {
+                        console.log(response);
+                        if (response.status == 'true') {
+                            alert(response.message);
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    function (response) {
+                        console.log(response);
+                    }
+                )
+            }
+        }
+
+        function requestHttp(surl, params, funcSuccess, funcError) {
+            fetch(surl, {
+                method: 'POST', // or 'PUT'
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(params),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    funcSuccess(data)
+                })
+                .catch((error) => {
+                    funcError(error)
+                });
+        }
+    </script>
+</body>
+
+</html>

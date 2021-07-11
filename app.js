@@ -1,55 +1,53 @@
-/** konfigurasi expressjs */
 const express = require('express')
-const app = express()
-const port = 3000
+const cors = require('cors');
+const fs = require('fs');
 
-/**setting expressjs untuk mangambil nilai pada request method postF */
+const router_system = require('./router_system.js')
+const router_module = require('./router_module.js')
+const config = require('./config.js')
+
+
+// --------------------------------------------------------  konfigurasi library
+const app = express()
+const port = config.port
+
+// library untuk handle cors policy connection
+app.use(cors());
+
+// library menghandle data pos menggunakan express.json
 app.use(express.json());
 app.use(express.urlencoded({
     extended: true
 }));
 
-/** konfigurasi library mysql */
-const mysql = require('mysql');
-var connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'ilovesomeone',
-    database: 'modul_midtrans',
+// library untuk mysql
+var mysql = require('mysql');
+var pool = mysql.createPool({
+    connectionLimit: 1000,
+    host: config.mysql_host,
+    user: config.mysql_username,
+    password: config.mysql_password,
+    database: config.mysql_database,
+    port: config.mysql_port,
+    multipleStatements: true,
+    // queueLimit: 30,
+    // acquireTimeout: 1000000
 });
 
+// rest api untuk list product
+var myLogger = function (req, res, next) {
+    router_module.LogTraffic(req)
+    next()
+}
+app.use(myLogger)
+// --------------------------------------------------------  kumpulan function untuk restapi
 
-/** contoh request type get */
-app.get('/test_get', (req, res) => {
-    let param1 = req.query.nama
-    res.send('Welcome ' + param1)
-})
+app.use(express.static('public'))
+app.post('/api/:mode', router_system.sys_api)
+app.post('/webhook_midtrans/:mode', router_system.webhook_midtrans)
 
-/** contoh request type post */
-app.post('/test_post', (req, res) => {
-    let param1 = req.body.nama
-    res.send('Method Post : Nama : ' + param1)
-})
+// --------------------------------------------------------  kumpulan function untuk restapi [END]
 
-/** contoh menambah data ke database */
-app.post('/transaction_add', function (req, res) {
-
-    /** menambah data */
-    const no_invoice = req.body.noinvoice
-    const grandtotal = req.body.grandtotal
-    const ssqlinsert = 'INSERT INTO `dbttrans` (`DocNumber`,`GrandTotal`,`TimeCreated`) VALUES ("' + no_invoice + '","' + grandtotal + '",NOW())'
-    connection.query(ssqlinsert, function (error, results, fields) {
-        try {
-            if (error) throw error;
-            res.send(results)
-        } catch (err) {
-            res.send(err)
-        }
-    });
-})
-
-
-/** port listen */
-app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`)
-})
+app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
+exports.module_app = () => { return pool }
+console.log(config);
