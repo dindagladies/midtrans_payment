@@ -44,8 +44,8 @@
     <br>
     <div class="mb-1">Status Billing : <input id="lblstatusbilling" type="text" disabled /> <br></div>
     <div class="mb-1">Metode Pembayran : <input id="lblmethodpayment" type="text" disabled /> <br></div>
-    <div class="mb-1">Jenis Pembayaran : <input id="lblkindpayment" type="text" disabled /> <br></div>
-    <div class="mb-1">Va Number : <input id="lblvanumber" type="text" disabled /> <br></div>
+    <div class="mb-1">Jenis Pembayaran / Link Payment : <input id="lblkindpayment" type="text" disabled /> <br></div>
+    <div class="mb-1">Va Number / QR Payment : <input id="lblvanumber" type="text" disabled /> <br></div>
     <hr>
 
     <script>
@@ -59,7 +59,7 @@
                     if (response.status == 'true') {
                         let opt = '';
                         for (const i in response.data) {
-                            opt = opt + `<option value="${response.data[i].CodePayment}">${response.data[i].NamePayment}</option>`
+                            opt = opt + `<option value="${response.data[i].ID}">${response.data[i].NamePayment}</option>`
                         }
                         document.getElementById('edtMethodPayment').innerHTML = opt;
                     } else {
@@ -75,13 +75,13 @@
 
         function createBilling() {
             const surl = '/api/create_billing'
-            const kindpayemnt = document.getElementById('edtMethodPayment').value;
+            const idpayment = document.getElementById('edtMethodPayment').value;
             const grandtotal = document.getElementById('edtAmountPayment').value;
             if (grandtotal == '') {
                 alert('Jumlah pembayaran wajib diisi');
             } else {
                 const param = {
-                    kindpayemnt: kindpayemnt,
+                    idpayment: idpayment,
                     grandtotal: grandtotal
                 }
                 requestHttp(
@@ -90,6 +90,11 @@
                         console.log(response);
                         if (response.status == 'true') {
                             document.getElementById('edtbilling').value = response.orderId;
+                            
+                            document.getElementById('lblstatusbilling').value = response.transactionStatus;
+                            document.getElementById('lblmethodpayment').value = response.paymentInfo.payment_type;
+                            document.getElementById('lblkindpayment').value = response.paymentInfo.bank;
+                            document.getElementById('lblvanumber').value = response.paymentInfo.va_number;
                         } else {
                             alert(response.message);
                         }
@@ -145,6 +150,7 @@
                         console.log(response);
                         if (response.status == 'true') {
                             alert(response.message);
+                            cekStatusBilling();
                         } else {
                             alert(response.message);
                         }
