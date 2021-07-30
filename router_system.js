@@ -148,6 +148,15 @@ exports.sys_api = async (req, res) => {
                         let fraudStatus = statusResponse.fraud_status;
                         let message = statusResponse.status_message;
 
+                        // detail billing
+                        const dataBillingPayment = await router_module.OpenQueryV1(`SELECT GrandTotal FROM billing_midtrans WHERE DocNumber="${orderId}"`)
+                        const GrandTotal = JSON.parse(dataBillingPayment.dataset[0].GrandTotal)
+
+                        // detail step
+                        const stepPaymentQuery = await router_module.OpenQueryV1(`SELECT description FROM paymentstep WHERE CodePayment="bri"`)
+                        const stepPayment = stepPaymentQuery.dataset
+                        console.log(stepPayment)
+
                         let paymentInfo = ''
                         if (statusResponse.payment_type == 'bank_transfer') {
                             if (statusResponse.va_numbers.length > 0) {
@@ -166,7 +175,7 @@ exports.sys_api = async (req, res) => {
                                 va_number: dataNotes[0].url,
                             }
                         }
-                        res.send({ status: 'true', message: message, orderId: orderId, transactionStatus: transactionStatus, fraudStatus: fraudStatus, paymentInfo: paymentInfo })
+                        res.send({ status: 'true', message: message, orderId: orderId, stepPayment: stepPayment, GrandTotal:GrandTotal,  transactionStatus: transactionStatus, fraudStatus: fraudStatus, paymentInfo: paymentInfo })
                     }).catch((e) => {
                         console.log('Error occured:', e.message);
                         res.send({ status: 'false', message: e.message })
